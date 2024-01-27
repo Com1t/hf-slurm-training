@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=gpt2_ds_multi      ## job name
+#SBATCH --job-name=gpt2_multi    ## job name
 #SBATCH --nodes=2                ## request 2 nodes
 #SBATCH --ntasks-per-node=1      ## run 1 srun task per node
 #SBATCH --cpus-per-task=32       ## allocate 32 CPUs per srun task
