@@ -20,8 +20,8 @@
 
 ## Description
 
-This repository demonstrates how to utilize the Slurm scheduler for running [Language model training](https://github.com/huggingface/transformers/tree/main/examples/pytorch/language-modeling) from the Transformers library. 
-While the original repository covered various training losses, this repository focuses on using Slurm with the CLM loss for simplicity.
+This repository demonstrates how to utilize the slurm scheduler for running the [language model training](https://github.com/huggingface/transformers/tree/main/examples/pytorch/language-modeling) from the Transformers library. 
+While the original repository covered various training losses, this repository focuses on using slurm with the CLM loss for simplicity.
 
 ## Environment
 
@@ -39,9 +39,10 @@ While the original repository covered various training losses, this repository f
 
 ## Slrum integration
 
-Slurm is a commonly used platform in HPC (High-Performance Computing). It's the scheduling system used in most supercomputers and provides excellent support for scientific computing, including MPI programs. However, Transformers utilizes Torch Distributed for encapsulation, so torchrun is needed. Without it, certain environment variables may be missing, preventing the execution. While this repository mainly focuses on training but this process is applicable to all environments requiring torchrun.
+Slurm is a commonly used platform in HPC (High-Performance Computing). Most supercomputers use this scheduling system because it features excellent support for scientific computing, including MPI programs. However, Transformers utilizes Torch Distributed for encapsulation, a superset of MPI, so torchrun is needed. Using torchrun can include certain environment variables. While this repository mainly focuses on training, this process applies to all environments requiring torchrun.
 
-This repository includes examples of multi-node training using Slurm, specifically run_clm_DDP.sh and run_clm_deepspeed.sh. Both scripts consist of four main parts.
+This repository includes `run_clm_DDP.sh`, a script of multi-node torch training with slurm.
+To run this SBATCH script, simply `sbatch run_clm_DDP.sh`.
 
 ### Allocating resource
 
@@ -50,7 +51,7 @@ For the CPU allocation, TWCC supercomputer (it should be similar to other enviro
 
 ```bash
 #!/bin/bash
-#SBATCH --job-name=gpt2_ds_multi      ## job name
+#SBATCH --job-name=gpt2_multi    ## job name
 #SBATCH --nodes=2                ## request 2 nodes
 #SBATCH --ntasks-per-node=1      ## run 1 srun task per node
 #SBATCH --cpus-per-task=32       ## allocate 32 CPUs per srun task
@@ -64,13 +65,13 @@ For the CPU allocation, TWCC supercomputer (it should be similar to other enviro
 
 ### Environment preparation
 
-In the HPC environment, environment module is often used to handle the dependency. The following commands ensure the presence of Conda, CUDA, and GCC in the environment. I installed all python dependencies in the "alpaca" Conda environment, so it's activated by `conda activate alpaca`.
+In the HPC environment, environment module is often used to handle the dependency. The following commands ensure the presence of Conda, CUDA, and GCC in the environment. I installed all python dependencies in the "gpt2" Conda environment, so it's activated by `conda activate gpt2`.
 
 ```bash
 module purge
 module load pkg/Anaconda3 cuda/11.7 compiler/gcc/11.2.0
 
-conda activate alpaca
+conda activate gpt2
 ```
 
 ### Torchrun preparation
@@ -178,12 +179,13 @@ Naively, fine-tuning a 7B model requires about 7 x 4 x 4 = 112 GB of VRAM. If yo
 - DeepSpeed ZeRO-3 can be used for inference as well, since it allows huge models to be loaded on multiple GPUs, which won’t be possible on a single GPU.
 
 Using ZeRO with transformers model is quick and easy because all you need is to change a few configurations in the DeepSpeed configuration json. No code changes are needed.
-You can find some examples of ZeRO configurations in the configs folder, including ZeRO-2 and ZeRO-3, as well as individual offload versions. If you want to learn more about how to adjust ZeRO configurations, you can refer to the [DeepSpeed Integration](https://huggingface.co/docs/transformers/main_classes/deepspeed) and [DeepSpeed Configuration JSON](https://www.deepspeed.ai/docs/config-json/).
+You can find some examples of ZeRO configurations in the `configs` folder, including ZeRO-2 and ZeRO-3, as well as individual offload versions. If you want to learn more about how to adjust ZeRO configurations, you can refer to the [DeepSpeed Integration](https://huggingface.co/docs/transformers/main_classes/deepspeed) and [DeepSpeed Configuration JSON](https://www.deepspeed.ai/docs/config-json/).
 
 ```bash
 python run_clm.py \
-    --model_type gpt2 --tokenizer_name gpt2 \
+    --model_name_or_path gpt2 \
     --deepspeed "./configs/[].json" \
+    [...]
 ```
 
 ### Creating a model on the fly
@@ -192,7 +194,7 @@ When training a model from scratch, configuration values may be overridden with 
 
 ```bash
 python run_clm.py \
-    --model_type gpt2 --tokenizer_name gpt2 \
+    --model_name_or_path gpt2 \
     --config_overrides="n_embd=1024,n_head=16,n_layer=48,n_positions=102" \
     [...]
 ```
